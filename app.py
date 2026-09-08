@@ -2,7 +2,8 @@ import os
 import json
 import re
 import sqlite3
-import smtplib
+import base64
+import requests
 from io import BytesIO
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
@@ -262,35 +263,28 @@ def build_excel():
     return filename
 
 def send_excel_email(start_date=None, end_date=None):
-    host = os.getenv("SMTP_HOST")
-    port = int(os.getenv("SMTP_PORT", "465"))
-    user = os.getenv("SMTP_USER")
-    password = os.getenv("SMTP_PASSWORD")
+    api_key = os.getenv("RESEND_API_KEY")
     mail_to = os.getenv("MAIL_TO")
-    if not all([host, user, password, mail_to]):
-        raise RuntimeError("未配置邮箱 SMTP 信息，请在 .env 中填写 SMTP_HOST / SMTP_USER / SMTP_PASSWORD / MAIL_TO")
+    if not api_key or not mail_to:
+        raise RuntimeError("未配置 RESEND_API_KEY 或 MAIL_TO 环境变量")
     wb = create_workbook(start_date, end_date)
     buf = BytesIO()
     wb.save(buf)
     buf.seek(0)
-    msg = MIMEMultipart()
-    msg["From"] = user
-    msg["To"] = mail_to
-    msg["Subject"] = f"AI记账消费报表 - {datetime.now().strftime('%Y-%m-%d')}"
-    msg.attach(MIMEText("您好，附件是您的 AI 记账消费报表，请查收。", "plain", "utf-8"))
-    part = MIMEBase("application", "vnd.openxmlformats-officedocument.spreadsheetml.sheet")
-    part.set_payload(buf.read())
-    encoders.encode_base64(part)
-    part.add_header("Content-Disposition", "attachment", filename="AI记账消费报表.xlsx")
-    msg.attach(part)
-    if port == 465:
-        server = smtplib.SMTP_SSL(host, port, timeout=30)
-    else:
-        server = smtplib.SMTP(host, port, timeout=30)
-        server.starttls()
-    server.login(user, password)
-    server.sendmail(user, [mail_to], msg.as_string())
-    server.quit()
+    excel_b64 = base64.b64encode(buf.read()).decode("utf-8")
+    resp = requests.post(
+        "https://api.resend.com/emails",
+        headers={"Authorization": "Bearer " + api_key, "Content-Type": "application/json"},
+        json={
+            "from": "onboarding@resend.dev",
+            "to": [mail_to],
+            "subject": "AI记账消费报表 - " + datetime.now().strftime("%Y-%m-%d"),
+            "text": "您好，附件是您的 AI 记账消费报表，请查收。",
+            "attachments": [{"filename": "AI记账消费报表.xlsx", "content": excel_b64}]
+        }
+    )
+    if resp.status_code != 200:
+        raise RuntimeError("邮件发送失败: " + str(resp.status_code) + " " + resp.text)
 
 @app.route("/")
 def index():

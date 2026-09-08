@@ -51,6 +51,7 @@ async function submitExpense(){
     msg.textContent=`✓ ${data.reply || "已完成记账"}`;
     input.value="";
     await load();
+    await sendEmail();
   }catch(e){msg.textContent="× "+e.message}
   finally{btn.disabled=false;btn.textContent="智能记账 →"}
 }
@@ -76,21 +77,18 @@ document.querySelector("#rangeSelect").addEventListener("change", function(){
 });
 
 async function sendEmail(){
-  const btn=document.querySelector("#sendEmail");
+  const msg=document.querySelector("#message");
   const p = getRangeParams();
-  if(p.range === "custom" && (!p.start || !p.end)){ alert("请选择自定义起止日期"); return; }
-  btn.disabled=true; btn.textContent="发送中…";
+  if(p.range === "custom" && (!p.start || !p.end)){ return; }
   try{
     const r=await fetch("/api/send-email",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(p)});
     const data=await r.json();
     if(!r.ok) throw new Error(data.error||"发送失败");
-    alert("✓ "+(data.message||"已发送到邮箱，请查收"));
-  }catch(e){ alert("× "+e.message); }
-  finally{ btn.disabled=false; btn.textContent="✉ 导出Excel并发送到邮箱"; }
+    if(msg) msg.textContent += "（报表已发送到邮箱）";
+  }catch(e){ if(msg) msg.textContent += "（邮件发送失败："+e.message+"）"; }
 }
 
 document.querySelector("#submit").addEventListener("click",submitExpense);
-document.querySelector("#sendEmail").addEventListener("click",sendEmail);
 
 document.querySelector("#queryRange").addEventListener("change", function(){
   document.querySelector("#queryCustomRange").style.display = this.value === "custom" ? "flex" : "none";

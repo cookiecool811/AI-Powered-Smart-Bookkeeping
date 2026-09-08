@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AI 智能记账</title>
+<link rel="stylesheet" href="/static/style.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <div class="brand"><div class="brand-icon">¥</div><div><b>AI 记账</b><span>Smart Finance</span></div></div>
+    <nav>
+      <a class="active">概览</a>
+    </nav>
+    <div class="side-note">
+      <b>AI 自动分类</b>
+      <p>直接告诉我你的消费，我会自动识别金额、日期和消费类别。</p>
+    </div>
+  </aside>
+
+  <main>
+    <header>
+      <div>
+        <div class="eyebrow">PERSONAL FINANCE</div>
+        <h1>消费概览</h1>
+        <p class="muted">用自然语言记账，让 AI 帮你整理每一笔消费。</p>
+      </div>
+      <div class="header-actions">
+        <div class="export-controls">
+          <select id="rangeSelect" class="range-select">
+            <option value="all">全部</option>
+            <option value="month">本月</option>
+            <option value="year">本年</option>
+            <option value="custom">自定义</option>
+          </select>
+          <div id="customRange" class="custom-range">
+            <input type="date" id="startDate">
+            <span>~</span>
+            <input type="date" id="endDate">
+          </div>
+        </div>
+        <button class="download" id="sendEmail">✉ 导出Excel并发送到邮箱</button>
+      </div>
+    </header>
+
+    <section class="cards">
+      <div class="card"><span>全部消费</span><strong id="total">¥0.00</strong><small id="count">0 笔记录</small></div>
+      <div class="card"><span>本月消费</span><strong id="month">¥0.00</strong><small>当前月份</small></div>
+      <div class="card"><span>年度消费</span><strong id="year">¥0.00</strong><small>当前年份</small></div>
+      <div class="card accent"><span>AI 状态</span><strong>● 在线</strong><small>GLM-4.7-Flash</small></div>
+    </section>
+
+    <section class="ai-box">
+      <div class="ai-head">
+        <div class="ai-avatar">AI</div>
+        <div><b>AI 记账助手</b><p>试试：“今天午餐花了 35 元，地铁 4 元，晚上看电影 42 元”</p></div>
+      </div>
+      <div class="input-row">
+        <textarea id="input" placeholder="告诉 AI 你的消费，例如：今天买咖啡 18 元，打车 26 元……"></textarea>
+        <button id="submit">智能记账 →</button>
+      </div>
+      <div id="message" class="message"></div>
+    </section>
+
+    <section class="panel query-panel">
+      <div class="panel-title">
+        <div><h2>消费查询</h2><p>按时间范围查询消费总金额</p></div>
+      </div>
+      <div class="query-controls">
+        <select id="queryRange" class="range-select">
+          <option value="month">本月</option>
+          <option value="year">本年</option>
+          <option value="all" selected>全部</option>
+          <option value="custom">自定义</option>
+        </select>
+        <div id="queryCustomRange" class="custom-range">
+          <input type="date" id="queryStartDate">
+          <span>~</span>
+          <input type="date" id="queryEndDate">
+        </div>
+        <button id="queryBtn" class="query-btn">查询</button>
+      </div>
+      <div class="query-result" id="queryResult">
+        <div class="query-result-item"><span>时间范围</span><strong id="queryRangeLabel">全部</strong></div>
+        <div class="query-result-item"><span>消费总金额</span><strong id="queryTotal">¥0.00</strong></div>
+        <div class="query-result-item"><span>记录笔数</span><strong id="queryCount">0 笔</strong></div>
+      </div>
+    </section>
+
+    <section class="grid">
+      <div class="panel" id="analysis">
+        <div class="panel-title"><div><h2>分类消费</h2><p>按消费类别汇总</p></div></div>
+        <div class="chart-wrap"><canvas id="chart"></canvas></div>
+      </div>
+      <div class="panel">
+        <div class="panel-title"><div><h2>分类金额</h2><p>当前全部记录</p></div></div>
+        <div id="categoryList" class="category-list"></div>
+      </div>
+    </section>
+
+    <section class="panel records" id="records">
+      <div class="panel-title">
+        <div><h2>最近账单</h2><p>AI 自动解析并保存</p></div>
+      </div>
+      <div class="table-scroll">
+      <table>
+        <thead><tr><th>日期</th><th>描述</th><th>分类</th><th>支付方式</th><th>金额</th><th>操作</th></tr></thead>
+        <tbody id="recordsBody"></tbody>
+      </table>
+      </div>
+    </section>
+  </main>
+</div>
+<script src="/static/app.js"></script>
+</body>
+</html>

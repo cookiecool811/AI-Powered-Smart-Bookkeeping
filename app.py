@@ -158,7 +158,7 @@ def save_items(items):
     conn.close()
     return saved
 
-def query_expenses(start_date=None, end_date=None):
+def query_expenses(start_date=None, end_date=None, ids=None):
     conn = db()
     cur = conn.cursor()
     sql = """
@@ -167,6 +167,10 @@ def query_expenses(start_date=None, end_date=None):
         FROM expenses WHERE 1=1
     """
     params = []
+    if ids:
+        placeholders = ",".join("?" * len(ids))
+        sql += " AND id IN (" + placeholders + ")"
+        params.extend(ids)
     if start_date:
         sql += " AND expense_date >= ?"
         params.append(start_date)
@@ -199,8 +203,8 @@ def range_label(range_type, start_date=None, end_date=None):
         return f"{start_date}至{end_date}"
     return "全部"
 
-def create_workbook(start_date=None, end_date=None):
-    rows = query_expenses(start_date, end_date)
+def create_workbook(start_date=None, end_date=None, ids=None):
+    rows = query_expenses(start_date, end_date, ids)
     wb = Workbook()
     ws = wb.active
     ws.title = "消费明细"
@@ -262,12 +266,12 @@ def build_excel():
     wb.save(filename)
     return filename
 
-def send_excel_email(start_date=None, end_date=None):
+def send_excel_email(start_date=None, end_date=None, ids=None):
     api_key = os.getenv("RESEND_API_KEY")
     mail_to = os.getenv("MAIL_TO")
     if not api_key or not mail_to:
         raise RuntimeError("未配置 RESEND_API_KEY 或 MAIL_TO 环境变量")
-    wb = create_workbook(start_date, end_date)
+    wb = create_workbook(start_date, end_date, ids)
     buf = BytesIO()
     wb.save(buf)
     buf.seek(0)
@@ -353,11 +357,17 @@ def api_delete(expense_id):
 
 @app.get("/download/excel")
 def download_excel():
-    range_type = request.args.get("range", "all")
+    range_type = request.args.get("range", "current")
     start = request.args.get("start")
     end = request.args.get("end")
-    start_date, end_date = resolve_date_range(range_type, start, end)
-    wb = create_workbook(start_date, end_date)
+    ids = request.args.getlist("ids")
+    if ids:
+        ids = [int(x) for x in ids]
+    if range_type == "current":
+        start_date, end_date = None, None
+    else:
+        start_date, end_date = resolve_date_range(range_type, start, end)
+    wb = create_workbook(start_date, end_date, ids)
     buf = BytesIO()
     wb.save(buf)
     buf.seek(0)
@@ -368,12 +378,16 @@ def download_excel():
 @app.post("/api/send-email")
 def api_send_email():
     data = request.get_json(silent=True) or {}
-    range_type = data.get("range", "all")
+    range_type = data.get("range", "current")
     start = data.get("start")
     end = data.get("end")
-    start_date, end_date = resolve_date_range(range_type, start, end)
+    ids = data.get("ids")
+    if range_type == "current":
+        start_date, end_date = None, None
+    else:
+        start_date, end_date = resolve_date_range(range_type, start, end)
     try:
-        send_excel_email(start_date, end_date)
+        send_excel_email(start_date, end_date, ids)
         return jsonify({"ok": True, "message": "报表已发送到邮箱"})
     except Exception as e:
         return jsonify({"error": str(e)}), 500

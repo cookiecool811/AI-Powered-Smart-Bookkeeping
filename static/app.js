@@ -1,4 +1,5 @@
 let chart;
+let lastAddedIds = [];
 
 const money = n => "¥" + Number(n || 0).toLocaleString("zh-CN",{minimumFractionDigits:2,maximumFractionDigits:2});
 
@@ -50,6 +51,7 @@ async function submitExpense(){
     if(!r.ok) throw new Error(data.error||"请求失败");
     msg.textContent=`✓ ${data.reply || "已完成记账"}`;
     input.value="";
+    lastAddedIds = (data.items || []).map(x => x.id);
     await load();
     await sendEmail();
   }catch(e){msg.textContent="× "+e.message}
@@ -80,6 +82,10 @@ async function sendEmail(){
   const msg=document.querySelector("#message");
   const p = getRangeParams();
   if(p.range === "custom" && (!p.start || !p.end)){ return; }
+  if(p.range === "current"){
+    if(!lastAddedIds.length){ if(msg) msg.textContent += "（暂无本次新增记录）"; return; }
+    p.ids = lastAddedIds;
+  }
   try{
     const r=await fetch("/api/send-email",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(p)});
     const data=await r.json();

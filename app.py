@@ -1,8 +1,7 @@
 import os
 import json
 import re
-import psycopg2
-from psycopg2.extras import RealDictCursor
+import sqlite3
 import smtplib
 from io import BytesIO
 from email.mime.multipart import MIMEMultipart
@@ -20,7 +19,9 @@ from dotenv import load_dotenv
 load_dotenv()
 
 BASE_DIR = Path(__file__).resolve().parent
-DATABASE_URL = os.getenv("DATABASE_URL")
+DATA_DIR = BASE_DIR / "data"
+DATA_DIR.mkdir(parents=True, exist_ok=True)
+DB_PATH = DATA_DIR / "expenses.db"
 EXPORT_DIR = BASE_DIR / "exports"
 EXPORT_DIR.mkdir(parents=True, exist_ok=True)
 
@@ -65,9 +66,8 @@ JSON格式：
 """
 
 def db():
-    if not DATABASE_URL:
-        raise RuntimeError("未配置 DATABASE_URL 环境变量（Supabase 连接字符串）")
-    conn = psycopg2.connect(DATABASE_URL, cursor_factory=RealDictCursor)
+    conn = sqlite3.connect(str(DB_PATH))
+    conn.row_factory = sqlite3.Row
     return conn
 
 def init_db():
@@ -75,7 +75,7 @@ def init_db():
     cur = conn.cursor()
     cur.execute("""
     CREATE TABLE IF NOT EXISTS expenses (
-        id SERIAL PRIMARY KEY,
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
         amount REAL NOT NULL,
         category TEXT NOT NULL,
         description TEXT NOT NULL,
@@ -140,10 +140,9 @@ def save_items(items):
         cur.execute("""
             INSERT INTO expenses
             (amount, category, description, expense_date, payment_method, confidence, created_at)
-            VALUES (%s, %s, %s, %s, %s, %s, %s)
-            RETURNING id
+            VALUES (?, ?, ?, ?, ?, ?, ?)
         """, (amount, category, description, date, payment, confidence, now))
-        new_id = cur.fetchone()["id"]
+        new_id = cur.lastrowid
         saved.append({
             "id": new_id,
             "amount": amount,
@@ -168,10 +167,10 @@ def query_expenses(start_date=None, end_date=None):
     """
     params = []
     if start_date:
-        sql += " AND expense_date >= %s"
+        sql += " AND expense_date >= ?"
         params.append(start_date)
     if end_date:
-        sql += " AND expense_date <= %s"
+        sql += " AND expense_date <= ?"
         params.append(end_date)
     sql += " ORDER BY expense_date DESC, id DESC"
     cur.execute(sql, params)
@@ -352,7 +351,7 @@ def api_parse():
 def api_delete(expense_id):
     conn = db()
     cur = conn.cursor()
-    cur.execute("DELETE FROM expenses WHERE id=%s", (expense_id,))
+    cur.execute("DELETE FROM expenses WHERE id=?", (expense_id,))
     conn.commit()
     cur.close()
     conn.close()

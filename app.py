@@ -266,9 +266,8 @@ def send_excel_email(start_date=None, end_date=None):
     port = int(os.getenv("SMTP_PORT", "465"))
     user = os.getenv("SMTP_USER")
     password = os.getenv("SMTP_PASSWORD")
-    mail_to = os.getenv("MAIL_TO", "")
-    recipients = [x.strip() for x in mail_to.split(",") if x.strip()]
-    if not all([host, user, password]) or not recipients:
+    mail_to = os.getenv("MAIL_TO")
+    if not all([host, user, password, mail_to]):
         raise RuntimeError("未配置邮箱 SMTP 信息，请在 .env 中填写 SMTP_HOST / SMTP_USER / SMTP_PASSWORD / MAIL_TO")
     wb = create_workbook(start_date, end_date)
     buf = BytesIO()
@@ -276,7 +275,7 @@ def send_excel_email(start_date=None, end_date=None):
     buf.seek(0)
     msg = MIMEMultipart()
     msg["From"] = user
-    msg["To"] = ", ".join(recipients)
+    msg["To"] = mail_to
     msg["Subject"] = f"AI记账消费报表 - {datetime.now().strftime('%Y-%m-%d')}"
     msg.attach(MIMEText("您好，附件是您的 AI 记账消费报表，请查收。", "plain", "utf-8"))
     part = MIMEBase("application", "vnd.openxmlformats-officedocument.spreadsheetml.sheet")
@@ -290,7 +289,7 @@ def send_excel_email(start_date=None, end_date=None):
         server = smtplib.SMTP(host, port, timeout=30)
         server.starttls()
     server.login(user, password)
-    server.sendmail(user, recipients, msg.as_string())
+    server.sendmail(user, [mail_to], msg.as_string())
     server.quit()
 
 @app.route("/")

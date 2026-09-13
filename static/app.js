@@ -45,8 +45,6 @@ async function load(){
 
   document.querySelector("#monthExpense").textContent = money(s.month_expense);
   document.querySelector("#monthIncome").textContent = money(s.month_income);
-  document.querySelector("#totalCountMe").textContent = s.count;
-  document.querySelector("#recordDays").textContent = new Set(e.items.map(x=>x.date)).size;
 
   renderRecords(e.items);
   renderCharts(s, e.items);

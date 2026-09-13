@@ -4,6 +4,7 @@ let allExpenses = [];
 let currentPeriod = "week";
 let currentView = "expense";
 let latestStats = null;
+let selectedMonth = "";
 
 const CATEGORY_ICONS = {
   "餐饮":"🍔","交通":"🚗","购物":"🛍️","住房":"🏠","娱乐":"🎮",
@@ -43,11 +44,21 @@ async function load(){
   allExpenses = e.items;
   latestStats = s;
 
-  document.querySelector("#monthExpense").textContent = money(s.month_expense);
-  document.querySelector("#monthIncome").textContent = money(s.month_income);
-
-  renderRecords(e.items);
+  if(!selectedMonth){
+    selectedMonth = new Date().toISOString().slice(0,7);
+    document.querySelector("#monthPicker").value = selectedMonth;
+  }
+  renderByMonth();
   renderCharts(s, e.items);
+}
+
+function renderByMonth(){
+  const filtered = allExpenses.filter(x => x.date.startsWith(selectedMonth));
+  const inc = filtered.filter(x => x.type === "income").reduce((a,b)=>a+Number(b.amount),0);
+  const exp = filtered.filter(x => (x.type||"expense") === "expense").reduce((a,b)=>a+Number(b.amount),0);
+  document.querySelector("#monthIncome").textContent = money(inc);
+  document.querySelector("#monthExpense").textContent = money(exp);
+  renderRecords(filtered);
 }
 
 function renderRecords(items){
@@ -262,10 +273,10 @@ document.querySelector("#input").addEventListener("keydown", e => {
   if((e.ctrlKey||e.metaKey)&&e.key==="Enter") submitExpense();
 });
 
-// 初始化头部月份
-(function(){
-  const n = new Date();
-  document.querySelector("#monthLabel").textContent = `${n.getFullYear()}年 ${String(n.getMonth()+1).padStart(2,"0")}月 ▾`;
-})();
+// 月份切换
+document.querySelector("#monthPicker").addEventListener("change", function(){
+  selectedMonth = this.value;
+  renderByMonth();
+});
 
 load();

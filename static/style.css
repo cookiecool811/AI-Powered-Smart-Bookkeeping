@@ -158,6 +158,20 @@ body{
   outline:none;
 }
 .custom-range span{font-size:11px;color:var(--muted)}
+.export-btn{
+  background:#27AE60;
+  color:#fff;
+  border:none;
+  border-radius:8px;
+  padding:7px 16px;
+  font-size:12px;
+  font-weight:700;
+  cursor:pointer;
+  min-width:auto;
+  transition:background .2s;
+}
+.export-btn:hover{background:#219A52}
+.export-btn:disabled{opacity:.6}
 
 /* ===== Tab 切换 ===== */
 .tab-content{display:none}

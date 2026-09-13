@@ -108,7 +108,6 @@ async function submitExpense(){
     input.value="";
     lastAddedIds = (data.items || []).map(x => x.id);
     await load();
-    await sendEmail();
   }catch(e){msg.textContent="× "+e.message; msg.style.color="#E74C3C"}
   finally{btn.disabled=false;btn.textContent="智能记账"}
 }
@@ -134,19 +133,19 @@ document.querySelector("#rangeSelect").addEventListener("change", function(){
 });
 
 async function sendEmail(){
-  const msg=document.querySelector("#message");
+  const btn=document.querySelector("#exportBtn");
   const p = getRangeParams();
-  if(p.range === "custom" && (!p.start || !p.end)){ return; }
-  if(p.range === "current"){
-    if(!lastAddedIds.length){ if(msg) msg.textContent += "（暂无本次新增记录）"; return; }
-    p.ids = lastAddedIds;
-  }
+  if(p.range === "custom" && (!p.start || !p.end)){ alert("请选择自定义起止日期"); return; }
+  if(p.range === "current" && !lastAddedIds.length){ alert("暂无本次新增记录，请先记账"); return; }
+  if(p.range === "current"){ p.ids = lastAddedIds; }
+  btn.disabled=true; btn.textContent="发送中…";
   try{
     const r=await fetch("/api/send-email",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(p)});
     const data=await r.json();
     if(!r.ok) throw new Error(data.error||"发送失败");
-    if(msg) msg.textContent += "（报表已发送到邮箱）";
-  }catch(e){ if(msg) msg.textContent += "（邮件发送失败："+e.message+"）"; }
+    alert("✓ 报表已发送到邮箱，请查收");
+  }catch(e){ alert("× 邮件发送失败："+e.message); }
+  finally{ btn.disabled=false; btn.textContent="确认导出"; }
 }
 
 // 底部导航切换
@@ -171,6 +170,7 @@ document.querySelector("#addBtn").addEventListener("click", function(){
 });
 
 document.querySelector("#submit").addEventListener("click",submitExpense);
+document.querySelector("#exportBtn").addEventListener("click",sendEmail);
 
 // 查询功能
 document.querySelector("#queryRange").addEventListener("change", function(){

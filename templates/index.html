@@ -170,10 +170,10 @@
 
     <div class="me-content">
       <div class="menu-group">
-        <div class="menu-item"><span class="mi-icon">📒</span>我的账本<span class="arrow">›</span></div>
-        <div class="menu-item"><span class="mi-icon">⚙️</span>设置<span class="arrow">›</span></div>
-        <div class="menu-item"><span class="mi-icon">💡</span>使用帮助<span class="arrow">›</span></div>
-        <div class="menu-item"><span class="mi-icon">✏️</span>意见反馈<span class="arrow">›</span></div>
+        <div class="menu-item" onclick="showToast('我的账本功能开发中')"><span class="mi-icon">📒</span>我的账本<span class="arrow">›</span></div>
+        <div class="menu-item" onclick="showToast('设置功能开发中')"><span class="mi-icon">⚙️</span>设置<span class="arrow">›</span></div>
+        <div class="menu-item" onclick="showToast('使用帮助功能开发中')"><span class="mi-icon">💡</span>使用帮助<span class="arrow">›</span></div>
+        <div class="menu-item" onclick="showToast('意见反馈功能开发中')"><span class="mi-icon">✏️</span>意见反馈<span class="arrow">›</span></div>
       </div>
     </div>
   </div>
@@ -199,6 +199,7 @@
   </nav>
 
 </div>
+<div class="toast" id="toast"></div>
 <script src="/static/app.js"></script>
 </body>
 </html>

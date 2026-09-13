@@ -322,13 +322,6 @@ body{
 .budget-line:last-child{border-bottom:none}
 .budget-line span{color:#666}
 .budget-line strong{font-weight:600}
-.asset-row{
-  display:flex;
-  justify-content:space-around;
-}
-.asset-col{text-align:center;flex:1}
-.asset-col span{display:block;font-size:14px;color:var(--muted);margin-bottom:6px}
-.asset-col strong{font-size:22px;font-weight:600}
 
 /* ===== 我的页 ===== */
 .me-header{padding-bottom:30px}

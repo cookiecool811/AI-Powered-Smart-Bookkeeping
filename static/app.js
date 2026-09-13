@@ -335,6 +335,45 @@ function showToast(msg){
   t._timer = setTimeout(() => t.classList.remove("show"), 2000);
 }
 
+// 头像上传
+document.querySelector("#avatarInput").addEventListener("change", function(e){
+  const file = e.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = function(ev){
+    const avatar = document.querySelector("#avatar");
+    avatar.style.backgroundImage = `url(${ev.target.result})`;
+    avatar.textContent = "";
+    localStorage.setItem("user_avatar", ev.target.result);
+    showToast("头像已更新");
+  };
+  reader.readAsDataURL(file);
+});
+
+// 用户名编辑
+function editUsername(){
+  const current = localStorage.getItem("user_name") || "Adrian";
+  const name = prompt("请输入昵称：", current);
+  if(name && name.trim()){
+    const trimmed = name.trim();
+    document.querySelector("#username").textContent = trimmed;
+    localStorage.setItem("user_name", trimmed);
+    showToast("昵称已更新");
+  }
+}
+
+// 加载用户信息
+(function(){
+  const savedName = localStorage.getItem("user_name");
+  if(savedName) document.querySelector("#username").textContent = savedName;
+  const savedAvatar = localStorage.getItem("user_avatar");
+  if(savedAvatar){
+    const avatar = document.querySelector("#avatar");
+    avatar.style.backgroundImage = `url(${savedAvatar})`;
+    avatar.textContent = "";
+  }
+})();
+
 // 月份切换
 document.querySelector("#monthPicker").addEventListener("change", function(){
   selectedMonth = this.value;

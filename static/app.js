@@ -216,18 +216,7 @@ function switchTab(tab){
 document.querySelectorAll(".nav-item").forEach(btn => {
   btn.addEventListener("click", () => switchTab(btn.dataset.tab));
 });
-
-// ===== 中央 + 按钮打开弹窗 =====
-document.querySelector("#addBtn").addEventListener("click", () => {
-  document.querySelector("#aiModal").classList.add("show");
-  document.querySelector("#input").focus();
-});
-document.querySelector("#modalClose").addEventListener("click", () => {
-  document.querySelector("#aiModal").classList.remove("show");
-});
-document.querySelector("#aiModal").addEventListener("click", e => {
-  if(e.target === e.currentTarget) document.querySelector("#aiModal").classList.remove("show");
-});
+document.querySelector(".nav-add").addEventListener("click", () => switchTab("ai"));
 
 // ===== 事件绑定 =====
 document.querySelector("#submit").addEventListener("click", submitExpense);

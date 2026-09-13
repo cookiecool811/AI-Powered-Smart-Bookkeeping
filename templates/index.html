@@ -10,34 +10,145 @@
 <body>
 <div class="app">
 
-  <!-- 黄色头部 -->
-  <header class="app-header">
-    <div class="header-top">
-      <span class="smile">◕‿◕</span>
-      <h1>AI 记账</h1>
-      <span class="header-spacer"></span>
+  <!-- ===== 明细页 ===== -->
+  <div class="tab-page active" id="page-list">
+    <header class="page-header">
+      <div class="header-top">
+        <span class="smile">◕‿◕</span>
+        <h1 class="app-title">AI 记账</h1>
+        <span class="spacer"></span>
+      </div>
+      <div class="header-bottom">
+        <div class="month-select" id="monthLabel">2026年 09月 ▾</div>
+        <div class="ie-group">
+          <div class="ie-col"><span>收入</span><strong>0.00</strong></div>
+          <div class="ie-col"><span>支出</span><strong id="monthExpense">¥0.00</strong></div>
+        </div>
+      </div>
+    </header>
+
+    <div class="quick-actions">
+      <div class="qa-item"><div class="qa-icon">📋</div><span>账单</span></div>
+      <div class="qa-item"><div class="qa-icon">💳</div><span>预算</span></div>
+      <div class="qa-item"><div class="qa-icon">🛡️</div><span>资产管家</span></div>
+      <div class="qa-item"><div class="qa-icon">🛍️</div><span>购物返现</span></div>
+      <div class="qa-item"><div class="qa-icon">⋯</div><span>更多</span></div>
     </div>
-    <div class="header-summary">
-      <div class="month-selector" id="monthLabel">2026年 09月 ▾</div>
-      <div class="ie-row">
-        <div class="ie-item"><span>收入</span><strong>0.00</strong></div>
-        <div class="ie-item"><span>支出</span><strong id="monthExpense">¥0.00</strong></div>
+
+    <div class="list-content">
+      <div id="recordsList" class="records-list"></div>
+    </div>
+  </div>
+
+  <!-- ===== 图表页 ===== -->
+  <div class="tab-page" id="page-chart">
+    <header class="page-header">
+      <div class="chart-title-row">支出 <span class="dropdown-arrow">▾</span></div>
+      <div class="period-tabs">
+        <button class="period-tab active" data-period="week">周</button>
+        <button class="period-tab" data-period="month">月</button>
+        <button class="period-tab" data-period="year">年</button>
+      </div>
+    </header>
+
+    <div class="chart-content">
+      <div class="period-label" id="periodLabel">本周</div>
+      <div class="period-stats">
+        <div><span>总支出</span><strong id="periodTotal">¥0.00</strong></div>
+        <div><span>平均值</span><strong id="periodAvg">¥0.00</strong></div>
+      </div>
+
+      <div class="line-chart-card">
+        <canvas id="lineChart"></canvas>
+      </div>
+
+      <div class="rank-section">
+        <div class="rank-title">支出排行榜</div>
+        <div id="categoryRank" class="category-rank"></div>
+      </div>
+
+      <div class="doughnut-card">
+        <div class="rank-title">分类占比</div>
+        <div class="chart-wrap"><canvas id="doughnutChart"></canvas></div>
       </div>
     </div>
-  </header>
+  </div>
 
-  <div class="content">
+  <!-- ===== 发现页 ===== -->
+  <div class="tab-page" id="page-discover">
+    <header class="page-header">
+      <div class="chart-title-row">发现</div>
+    </header>
+    <div class="discover-content">
+      <div class="empty-icon">🌍</div>
+      <p class="empty-text">更多功能敬请期待</p>
+    </div>
+  </div>
 
-    <!-- AI 记账输入卡片 -->
-    <section class="ai-card" id="aiCard">
-      <div class="ai-label">🤖 AI 智能记账</div>
-      <textarea id="input" placeholder="告诉 AI 你的消费……" rows="2"></textarea>
-      <button id="submit">智能记账</button>
-      <div id="message" class="message"></div>
-      <div class="range-bar">
-        <select id="rangeSelect" class="range-select">
-          <option value="current" selected>导出：本次</option>
-          <option value="all">导出：全部</option>
+  <!-- ===== 我的页 ===== -->
+  <div class="tab-page" id="page-me">
+    <header class="page-header me-header">
+      <div class="profile-row">
+        <div class="avatar">🐱</div>
+        <div class="profile-info">
+          <div class="username">Adrian</div>
+        </div>
+        <div class="checkin-badge">已打卡</div>
+      </div>
+      <div class="profile-stats">
+        <div><strong id="streakDays">1</strong><span>已连续打卡</span></div>
+        <div><strong id="recordDays">0</strong><span>记账总天数</span></div>
+        <div><strong id="totalCountMe">0</strong><span>记账总笔数</span></div>
+      </div>
+    </header>
+
+    <div class="me-content">
+      <div class="vip-card">
+        <div class="vip-icon">👑</div>
+        <div class="vip-text">
+          <div class="vip-title">升级为VIP</div>
+          <div class="vip-sub">畅享更多高级功能</div>
+        </div>
+        <span class="arrow">›</span>
+      </div>
+
+      <div class="quick-grid">
+        <div class="qg-item"><div class="qg-icon">🔔</div><span>消息</span></div>
+        <div class="qg-item"><div class="qg-icon">🏅</div><span>我的徽章</span></div>
+        <div class="qg-item"><div class="qg-icon">🎁</div><span>我的积分</span></div>
+        <div class="qg-item"><div class="qg-icon">💌</div><span>邀请好友</span></div>
+        <div class="qg-item"><div class="qg-icon">⚙️</div><span>设置</span></div>
+      </div>
+
+      <div class="menu-group">
+        <div class="menu-item"><span class="mi-icon">📒</span>我的账本<span class="arrow">›</span></div>
+        <div class="menu-item"><span class="mi-icon">🏠</span>家庭账单<span class="arrow">›</span></div>
+      </div>
+
+      <div class="menu-group">
+        <div class="menu-item"><span class="mi-icon">⚙️</span>设置<span class="arrow">›</span></div>
+        <div class="menu-item"><span class="mi-icon">🛡️</span>账户安全中心<span class="tag risk">高风险</span><span class="arrow">›</span></div>
+        <div class="menu-item"><span class="mi-icon">💡</span>使用帮助<span class="arrow">›</span></div>
+        <div class="menu-item"><span class="mi-icon">✏️</span>意见反馈<span class="arrow">›</span></div>
+        <div class="menu-item"><span class="mi-icon">👍</span>去评分<span class="arrow">›</span></div>
+        <div class="menu-item"><span class="mi-icon">💴</span>关于 AI 记账<span class="arrow">›</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== AI 记账弹窗 (图五) ===== -->
+  <div class="modal-overlay" id="aiModal">
+    <div class="ai-modal">
+      <div class="ai-modal-head">
+        <span class="robot">🤖</span>
+        <span class="ai-modal-title">AI 智能记账</span>
+      </div>
+      <textarea id="input" class="ai-input" placeholder="告诉 AI 你的消费……" rows="3"></textarea>
+      <button id="submit" class="ai-submit">智能记账</button>
+      <div id="message" class="ai-message"></div>
+      <div class="export-row">
+        <select id="rangeSelect" class="export-select">
+          <option value="all" selected>导出：全部</option>
           <option value="month">导出：本月</option>
           <option value="year">导出：本年</option>
           <option value="custom">导出：自定义</option>
@@ -47,78 +158,29 @@
         </div>
         <button id="exportBtn" class="export-btn">确认导出</button>
       </div>
-    </section>
-
-    <!-- 明细 Tab -->
-    <div class="tab-content active" id="tab-list">
-      <div id="recordsList" class="records-list"></div>
+      <button class="modal-close" id="modalClose">关闭</button>
     </div>
-
-    <!-- 图表 Tab -->
-    <div class="tab-content" id="tab-chart">
-      <div class="chart-card">
-        <div class="chart-title">分类消费</div>
-        <div class="chart-wrap"><canvas id="chart"></canvas></div>
-      </div>
-      <div class="chart-card">
-        <div class="chart-title">分类金额</div>
-        <div id="categoryList" class="category-list"></div>
-      </div>
-    </div>
-
-    <!-- 查询 Tab -->
-    <div class="tab-content" id="tab-query">
-      <div class="query-card">
-        <div class="chart-title">消费查询</div>
-        <div class="query-controls">
-          <select id="queryRange" class="range-select">
-            <option value="month">本月</option>
-            <option value="year">本年</option>
-            <option value="all" selected>全部</option>
-            <option value="custom">自定义</option>
-          </select>
-          <div id="queryCustomRange" class="custom-range">
-            <input type="date" id="queryStartDate"><span>~</span><input type="date" id="queryEndDate">
-          </div>
-          <button id="queryBtn" class="query-btn">查询</button>
-        </div>
-        <div class="query-result">
-          <div class="query-result-item"><span>时间范围</span><strong id="queryRangeLabel">全部</strong></div>
-          <div class="query-result-item"><span>消费总金额</span><strong id="queryTotal">¥0.00</strong></div>
-          <div class="query-result-item"><span>记录笔数</span><strong id="queryCount">0 笔</strong></div>
-        </div>
-      </div>
-    </div>
-
   </div>
 
-  <!-- 底部导航 -->
+  <!-- ===== 底部导航 (图一) ===== -->
   <nav class="bottom-nav">
     <button class="nav-item active" data-tab="list">
       <span class="nav-icon">📋</span><span class="nav-text">明细</span>
     </button>
     <button class="nav-item" data-tab="chart">
-      <span class="nav-icon">📊</span><span class="nav-text">图表</span>
+      <span class="nav-icon">📈</span><span class="nav-text">图表</span>
     </button>
-    <button class="nav-add" id="addBtn">＋</button>
-    <button class="nav-item" data-tab="query">
-      <span class="nav-icon">🔍</span><span class="nav-text">查询</span>
+    <button class="nav-add" id="addBtn">
+      <span class="add-ring"><span class="add-circle">＋</span></span>
+      <span class="nav-text add-text">记账</span>
     </button>
-    <button class="nav-item" data-tab="settings">
+    <button class="nav-item" data-tab="discover">
+      <span class="nav-icon">🌍</span><span class="nav-text">发现</span>
+    </button>
+    <button class="nav-item" data-tab="me">
       <span class="nav-icon">👤</span><span class="nav-text">我的</span>
     </button>
   </nav>
-
-  <!-- 我的 Tab 内容（简单信息） -->
-  <div class="tab-content" id="tab-settings" style="display:none">
-    <div class="settings-card">
-      <div class="settings-row"><span>AI 模型</span><strong>GLM-4.7-Flash</strong></div>
-      <div class="settings-row"><span>数据库</span><strong>SQLite 本地</strong></div>
-      <div class="settings-row"><span>邮件推送</span><strong>已开启</strong></div>
-      <div class="settings-row"><span>总记录数</span><strong id="totalCount">0 笔</strong></div>
-      <div class="settings-row"><span>总消费</span><strong id="totalAmount">¥0.00</strong></div>
-    </div>
-  </div>
 
 </div>
 <script src="/static/app.js"></script>

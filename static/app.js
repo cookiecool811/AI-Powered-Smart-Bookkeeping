@@ -1,85 +1,61 @@
-let chart;
+let doughnutChart, lineChart;
 let lastAddedIds = [];
+let allExpenses = [];
+let currentPeriod = "week";
 
 const CATEGORY_ICONS = {
   "餐饮":"🍔","交通":"🚗","购物":"🛍️","住房":"🏠","娱乐":"🎮",
   "医疗":"💊","教育":"📚","通讯":"📱","旅行":"✈️","生活缴费":"💡",
   "数码电子":"💻","其他":"📌"
 };
+const CHART_COLORS = ["#FFD93D","#FF9F43","#EE5A6F","#54A0FF","#5F27CD","#00D2D3","#FF6B6B","#48DBFB","#FECA57","#1DD1A1","#C8D6E5","#8395A7"];
 
 const money = n => "¥" + Number(n || 0).toLocaleString("zh-CN",{minimumFractionDigits:2,maximumFractionDigits:2});
+const getIcon = c => CATEGORY_ICONS[c] || "📌";
+function escapeHtml(s){return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c]));}
 
-function escapeHtml(s){
-  return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c]));
-}
-
-function getIcon(cat){ return CATEGORY_ICONS[cat] || "📌"; }
-
-// 按日期分组
 function groupByDate(items){
-  const groups = {};
+  const g = {};
   items.forEach(it => {
-    const d = it.date;
-    if(!groups[d]) groups[d] = {items:[], total:0};
-    groups[d].items.push(it);
-    groups[d].total += Number(it.amount);
+    if(!g[it.date]) g[it.date] = {items:[], total:0};
+    g[it.date].items.push(it);
+    g[it.date].total += Number(it.amount);
   });
-  return Object.keys(groups).sort().reverse().map(d => ({date:d, ...groups[d]}));
+  return Object.keys(g).sort().reverse().map(d => ({date:d, ...g[d]}));
 }
 
-function formatDate(dateStr){
-  const d = new Date(dateStr + "T00:00:00");
-  const weekdays = ["星期日","星期一","星期二","星期三","星期四","星期五","星期六"];
-  return `${d.getMonth()+1}月${d.getDate()}日 ${weekdays[d.getDay()]}`;
+function formatDate(ds){
+  const d = new Date(ds + "T00:00:00");
+  const wd = ["星期日","星期一","星期二","星期三","星期四","星期五","星期六"];
+  return `${d.getMonth()+1}月${d.getDate()}日 ${wd[d.getDay()]}`;
 }
 
+// ===== 加载数据 =====
 async function load(){
   const [s,e] = await Promise.all([
     fetch("/api/stats").then(r=>r.json()),
     fetch("/api/expenses").then(r=>r.json())
   ]);
+  allExpenses = e.items;
 
-  // 头部本月支出
   document.querySelector("#monthExpense").textContent = money(s.month_total);
+  document.querySelector("#totalCountMe").textContent = s.count;
+  document.querySelector("#recordDays").textContent = new Set(e.items.map(x=>x.date)).size;
 
-  // 设置页统计
-  document.querySelector("#totalCount").textContent = s.count + " 笔";
-  document.querySelector("#totalAmount").textContent = money(s.total);
-
-  // 分类图表
-  const max = Math.max(...s.category.map(x=>x.value),1);
-  document.querySelector("#categoryList").innerHTML = s.category.length
-    ? s.category.map(x=>`
-      <div>
-        <div class="cat-row"><span>${getIcon(x.name)} ${x.name}</span><b>${money(x.value)}</b></div>
-        <div class="bar"><i style="width:${x.value/max*100}%"></i></div>
-      </div>`).join("")
-    : '<p style="text-align:center;color:#999;padding:20px">暂无消费数据</p>';
-
-  if(chart) chart.destroy();
-  chart = new Chart(document.querySelector("#chart"),{
-    type:"doughnut",
-    data:{labels:s.category.map(x=>x.name),datasets:[{data:s.category.map(x=>x.value),backgroundColor:["#FFD93D","#FF9F43","#EE5A6F","#54A0FF","#5F27CD","#00D2D3","#FF6B6B","#48DBFB","#FECA57","#1DD1A1","#C8D6E5","#8395A7"]}]},
-    options:{responsive:true,maintainAspectRatio:false,cutout:"65%",plugins:{legend:{position:"right",labels:{boxWidth:10,font:{size:11}}}}}
-  });
-
-  // 账单列表（按日期分组）
   renderRecords(e.items);
+  renderCharts(s, e.items);
 }
 
 function renderRecords(items){
-  const container = document.querySelector("#recordsList");
+  const c = document.querySelector("#recordsList");
   if(!items.length){
-    container.innerHTML = '<div class="empty-state">还没有账单，点下方 ＋ 开始记账吧</div>';
+    c.innerHTML = `<div class="empty-state"><div class="empty-icon-big">📄</div><p>暂无数据</p></div>`;
     return;
   }
   const groups = groupByDate(items);
-  container.innerHTML = groups.map(g => `
+  c.innerHTML = groups.map(g => `
     <div class="date-group">
-      <div class="date-header">
-        <span class="date-text">${formatDate(g.date)}</span>
-        <span class="date-total">支出 ${money(g.total)}</span>
-      </div>
+      <div class="date-header"><span class="date-text">${formatDate(g.date)}</span><span class="date-total">支出 ${money(g.total)}</span></div>
       ${g.items.map(it => `
         <div class="record-item">
           <div class="record-icon">${getIcon(it.category)}</div>
@@ -89,12 +65,83 @@ function renderRecords(items){
           </div>
           <div class="record-amount">-${Number(it.amount).toFixed(2)}</div>
           <button class="record-delete" onclick="removeExpense(${it.id})">✕</button>
-        </div>
-      `).join("")}
-    </div>
-  `).join("");
+        </div>`).join("")}
+    </div>`).join("");
 }
 
+// ===== 图表 =====
+function renderCharts(stats, items){
+  // 分类排行
+  const cats = stats.category;
+  document.querySelector("#categoryRank").innerHTML = cats.length
+    ? cats.slice(0,8).map((x,i) => `
+      <div class="rank-item">
+        <div class="rank-num">${i+1}</div>
+        <span>${getIcon(x.name)}</span>
+        <div class="rank-name">${x.name}</div>
+        <div class="rank-amount">${money(x.value)}</div>
+      </div>`).join("")
+    : `<div class="empty-state"><p>暂无数据</p></div>`;
+
+  // 环形图
+  if(doughnutChart) doughnutChart.destroy();
+  doughnutChart = new Chart(document.querySelector("#doughnutChart"),{
+    type:"doughnut",
+    data:{labels:cats.map(x=>x.name),datasets:[{data:cats.map(x=>x.value),backgroundColor:CHART_COLORS}]},
+    options:{responsive:true,maintainAspectRatio:false,cutout:"65%",plugins:{legend:{position:"right",labels:{boxWidth:10,font:{size:11}}}}}
+  });
+
+  renderLineChart(items);
+}
+
+function renderLineChart(items){
+  const now = new Date();
+  let labels = [], filtered = [];
+
+  if(currentPeriod === "week"){
+    for(let i=6;i>=0;i--){
+      const d = new Date(now); d.setDate(d.getDate()-i);
+      labels.push(`${d.getMonth()+1}-${d.getDate()}`);
+    }
+    const weekAgo = new Date(now); weekAgo.setDate(weekAgo.getDate()-6);
+    filtered = items.filter(x => new Date(x.date+"T00:00:00") >= weekAgo);
+    document.querySelector("#periodLabel").textContent = "本周";
+  } else if(currentPeriod === "month"){
+    const days = new Date(now.getFullYear(), now.getMonth()+1, 0).getDate();
+    for(let i=1;i<=days;i++) labels.push(`${i}日`);
+    filtered = items.filter(x => x.date.startsWith(`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,"0")}`));
+    document.querySelector("#periodLabel").textContent = "本月";
+  } else {
+    for(let m=1;m<=12;m++) labels.push(`${m}月`);
+    filtered = items.filter(x => x.date.startsWith(String(now.getFullYear())));
+    document.querySelector("#periodLabel").textContent = "本年";
+  }
+
+  // 聚合
+  const totals = {};
+  filtered.forEach(x => {
+    let key;
+    if(currentPeriod === "year") key = x.date.substring(5,7) + "月";
+    else if(currentPeriod === "month") key = parseInt(x.date.substring(8,10)) + "日";
+    else key = `${new Date(x.date+"T00:00:00").getMonth()+1}-${new Date(x.date+"T00:00:00").getDate()}`;
+    totals[key] = (totals[key]||0) + Number(x.amount);
+  });
+  const data = labels.map(l => totals[l] || 0);
+  const sum = data.reduce((a,b)=>a+b,0);
+  const avg = data.filter(v=>v>0).length ? sum/data.filter(v=>v>0).length : 0;
+
+  document.querySelector("#periodTotal").textContent = money(sum);
+  document.querySelector("#periodAvg").textContent = money(avg);
+
+  if(lineChart) lineChart.destroy();
+  lineChart = new Chart(document.querySelector("#lineChart"),{
+    type:"line",
+    data:{labels,datasets:[{data,borderColor:"#F0C419",backgroundColor:"rgba(255,217,61,.15)",fill:true,tension:.3,pointRadius:4,pointBackgroundColor:"#fff",pointBorderColor:"#F0C419",pointBorderWidth:2}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,grid:{color:"#f0f0f0"},ticks:{font:{size:10}}},x:{grid:{display:false},ticks:{font:{size:10}}}}}
+  });
+}
+
+// ===== AI 记账 =====
 async function submitExpense(){
   const input=document.querySelector("#input"), btn=document.querySelector("#submit"), msg=document.querySelector("#message");
   const text=input.value.trim();
@@ -105,11 +152,24 @@ async function submitExpense(){
     const data=await r.json();
     if(!r.ok) throw new Error(data.error||"请求失败");
     msg.textContent=`✓ ${data.reply || "已完成记账"}`;
-    input.value="";
     lastAddedIds = (data.items || []).map(x => x.id);
+    input.value="";
     await load();
+    // 自动导出本次
+    await autoSendCurrent();
   }catch(e){msg.textContent="× "+e.message; msg.style.color="#E74C3C"}
   finally{btn.disabled=false;btn.textContent="智能记账"}
+}
+
+async function autoSendCurrent(){
+  if(!lastAddedIds.length) return;
+  const msg=document.querySelector("#message");
+  try{
+    const r=await fetch("/api/send-email",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({range:"current",ids:lastAddedIds})});
+    const data=await r.json();
+    if(!r.ok) throw new Error(data.error||"发送失败");
+    msg.textContent += "（本次报表已发送到邮箱）";
+  }catch(e){ msg.textContent += "（邮件发送失败："+e.message+"）"; }
 }
 
 async function removeExpense(id){
@@ -118,26 +178,21 @@ async function removeExpense(id){
   await load();
 }
 
+// ===== 手动导出 =====
 function getRangeParams(){
   const range = document.querySelector("#rangeSelect").value;
-  const params = {range};
+  const p = {range};
   if(range === "custom"){
-    params.start = document.querySelector("#startDate").value;
-    params.end = document.querySelector("#endDate").value;
+    p.start = document.querySelector("#startDate").value;
+    p.end = document.querySelector("#endDate").value;
   }
-  return params;
+  return p;
 }
-
-document.querySelector("#rangeSelect").addEventListener("change", function(){
-  document.querySelector("#customRange").style.display = this.value === "custom" ? "flex" : "none";
-});
 
 async function sendEmail(){
   const btn=document.querySelector("#exportBtn");
   const p = getRangeParams();
   if(p.range === "custom" && (!p.start || !p.end)){ alert("请选择自定义起止日期"); return; }
-  if(p.range === "current" && !lastAddedIds.length){ alert("暂无本次新增记录，请先记账"); return; }
-  if(p.range === "current"){ p.ids = lastAddedIds; }
   btn.disabled=true; btn.textContent="发送中…";
   try{
     const r=await fetch("/api/send-email",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(p)});
@@ -148,63 +203,57 @@ async function sendEmail(){
   finally{ btn.disabled=false; btn.textContent="确认导出"; }
 }
 
-// 底部导航切换
+// ===== Tab 切换 =====
+function switchTab(tab){
+  document.querySelectorAll(".nav-item").forEach(b => b.classList.remove("active"));
+  document.querySelectorAll(".tab-page").forEach(p => p.classList.remove("active"));
+  document.querySelector("#page-" + tab).classList.add("active");
+  const btn = document.querySelector(`.nav-item[data-tab="${tab}"]`);
+  if(btn) btn.classList.add("active");
+  window.scrollTo(0,0);
+}
+
 document.querySelectorAll(".nav-item").forEach(btn => {
-  btn.addEventListener("click", function(){
-    const tab = this.dataset.tab;
-    document.querySelectorAll(".nav-item").forEach(b => b.classList.remove("active"));
+  btn.addEventListener("click", () => switchTab(btn.dataset.tab));
+});
+
+// ===== 中央 + 按钮打开弹窗 =====
+document.querySelector("#addBtn").addEventListener("click", () => {
+  document.querySelector("#aiModal").classList.add("show");
+  document.querySelector("#input").focus();
+});
+document.querySelector("#modalClose").addEventListener("click", () => {
+  document.querySelector("#aiModal").classList.remove("show");
+});
+document.querySelector("#aiModal").addEventListener("click", e => {
+  if(e.target === e.currentTarget) document.querySelector("#aiModal").classList.remove("show");
+});
+
+// ===== 事件绑定 =====
+document.querySelector("#submit").addEventListener("click", submitExpense);
+document.querySelector("#exportBtn").addEventListener("click", sendEmail);
+document.querySelector("#rangeSelect").addEventListener("change", function(){
+  document.querySelector("#customRange").style.display = this.value === "custom" ? "flex" : "none";
+});
+
+// 图表周期切换
+document.querySelectorAll(".period-tab").forEach(tab => {
+  tab.addEventListener("click", function(){
+    document.querySelectorAll(".period-tab").forEach(t => t.classList.remove("active"));
     this.classList.add("active");
-    document.querySelectorAll(".tab-content").forEach(t => t.classList.remove("active"));
-    document.querySelector("#tab-" + tab).classList.add("active");
+    currentPeriod = this.dataset.period;
+    renderLineChart(allExpenses);
   });
 });
 
-// 中央 ＋ 按钮：聚焦 AI 输入
-document.querySelector("#addBtn").addEventListener("click", function(){
-  document.querySelectorAll(".nav-item").forEach(b => b.classList.remove("active"));
-  document.querySelectorAll(".tab-content").forEach(t => t.classList.remove("active"));
-  document.querySelector("#tab-list").classList.add("active");
-  document.querySelector(".nav-item[data-tab='list']").classList.add("active");
-  document.querySelector("#input").focus();
-  window.scrollTo({top:0, behavior:"smooth"});
-});
-
-document.querySelector("#submit").addEventListener("click",submitExpense);
-document.querySelector("#exportBtn").addEventListener("click",sendEmail);
-
-// 查询功能
-document.querySelector("#queryRange").addEventListener("change", function(){
-  document.querySelector("#queryCustomRange").style.display = this.value === "custom" ? "flex" : "none";
-});
-
-async function runQuery(){
-  const range = document.querySelector("#queryRange").value;
-  const params = {range};
-  if(range === "custom"){
-    params.start = document.querySelector("#queryStartDate").value;
-    params.end = document.querySelector("#queryEndDate").value;
-    if(!params.start || !params.end){ alert("请选择自定义起止日期"); return; }
-  }
-  const qs = new URLSearchParams(params).toString();
-  try{
-    const r = await fetch("/api/summary?" + qs);
-    const data = await r.json();
-    document.querySelector("#queryRangeLabel").textContent = data.range_label;
-    document.querySelector("#queryTotal").textContent = money(data.total);
-    document.querySelector("#queryCount").textContent = data.count + " 笔";
-  }catch(e){ alert("查询失败: " + e.message); }
-}
-document.querySelector("#queryBtn").addEventListener("click",runQuery);
-
-document.querySelector("#input").addEventListener("keydown",e=>{
+document.querySelector("#input").addEventListener("keydown", e => {
   if((e.ctrlKey||e.metaKey)&&e.key==="Enter") submitExpense();
 });
 
-// 更新头部月份
+// 初始化头部月份
 (function(){
-  const now = new Date();
-  document.querySelector("#monthLabel").textContent = `${now.getFullYear()}年 ${String(now.getMonth()+1).padStart(2,"0")}月 ▾`;
+  const n = new Date();
+  document.querySelector("#monthLabel").textContent = `${n.getFullYear()}年 ${String(n.getMonth()+1).padStart(2,"0")}月 ▾`;
 })();
 
-runQuery();
 load();

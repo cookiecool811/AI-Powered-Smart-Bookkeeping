@@ -64,32 +64,6 @@ body{
 .ie-col span{display:block;font-size:12px;color:#666;margin-bottom:2px}
 .ie-col strong{font-size:24px;font-weight:700}
 
-/* ===== 快捷操作行 ===== */
-.quick-actions{
-  display:flex;
-  justify-content:space-around;
-  background:var(--card);
-  margin:-14px 14px 0;
-  border-radius:16px;
-  padding:16px 8px;
-  box-shadow:0 2px 12px rgba(0,0,0,.05);
-  position:relative;
-  z-index:2;
-}
-.qa-item{
-  display:flex;
-  flex-direction:column;
-  align-items:center;
-  gap:6px;
-  cursor:pointer;
-}
-.qa-icon{
-  width:40px;height:40px;
-  display:flex;align-items:center;justify-content:center;
-  font-size:22px;
-}
-.qa-item span{font-size:12px;color:var(--text)}
-
 /* ===== Tab 页面切换 ===== */
 .tab-page{display:none}
 .tab-page.active{display:block}

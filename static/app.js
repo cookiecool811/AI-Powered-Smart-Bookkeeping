@@ -50,7 +50,46 @@ async function load(){
   }
   renderByMonth();
   renderCharts(s, e.items);
+  updateDiscover();
 }
+
+function updateDiscover(){
+  const now = new Date();
+  const monthStr = String(now.getMonth()+1).padStart(2,"0");
+  document.querySelector("#billMonth").textContent = monthStr;
+  document.querySelector("#budgetTitle").textContent = `${monthStr}月总预算`;
+
+  const monthItems = allExpenses.filter(x => x.date.startsWith(now.getFullYear()+"-"+monthStr));
+  const inc = monthItems.filter(x => x.type === "income").reduce((a,b)=>a+Number(b.amount),0);
+  const exp = monthItems.filter(x => (x.type||"expense") === "expense").reduce((a,b)=>a+Number(b.amount),0);
+  document.querySelector("#billIncome").textContent = inc.toFixed(2);
+  document.querySelector("#billExpense").textContent = exp.toFixed(2);
+  document.querySelector("#billBalance").textContent = (inc - exp).toFixed(2);
+
+  // 预算
+  const budgetKey = "budget_" + now.getFullYear() + "_" + monthStr;
+  const budget = parseFloat(localStorage.getItem(budgetKey)) || 0;
+  const remain = Math.max(0, budget - exp);
+  const percent = budget > 0 ? Math.round((remain / budget) * 100) : 0;
+  document.querySelector("#budgetRemain").textContent = remain.toFixed(2);
+  document.querySelector("#budgetTotal").textContent = budget.toFixed(2);
+  document.querySelector("#budgetSpent").textContent = exp.toFixed(2);
+  document.querySelector("#ringPercent").textContent = percent + "%";
+  const circumference = 2 * Math.PI * 50;
+  const offset = circumference * (1 - percent / 100);
+  document.querySelector("#ringProgress").style.strokeDashoffset = offset;
+}
+
+document.querySelector("#budgetSetBtn").addEventListener("click", function(){
+  const now = new Date();
+  const budgetKey = "budget_" + now.getFullYear() + "_" + String(now.getMonth()+1).padStart(2,"0");
+  const current = localStorage.getItem(budgetKey) || "";
+  const val = prompt("请输入本月预算金额：", current);
+  if(val !== null && !isNaN(val) && val >= 0){
+    localStorage.setItem(budgetKey, val);
+    updateDiscover();
+  }
+});
 
 function renderByMonth(){
   const filtered = allExpenses.filter(x => x.date.startsWith(selectedMonth));

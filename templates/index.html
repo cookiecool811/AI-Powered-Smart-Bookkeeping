@@ -108,11 +108,64 @@
   <!-- ===== 发现页 ===== -->
   <div class="tab-page" id="page-discover">
     <header class="page-header">
-      <div class="chart-title-row">发现</div>
+      <div class="discover-title">发现</div>
     </header>
     <div class="discover-content">
-      <div class="empty-icon">🌍</div>
-      <p class="empty-text">更多功能敬请期待</p>
+
+      <!-- 账单卡片 -->
+      <div class="discover-card">
+        <div class="card-head">
+          <span class="card-title">账单</span>
+          <span class="arrow">›</span>
+        </div>
+        <div class="bill-row">
+          <div class="bill-month"><span id="billMonth">09</span><span class="bill-unit">月</span></div>
+          <div class="bill-col"><span>收入</span><strong id="billIncome">0.00</strong></div>
+          <div class="bill-col"><span>支出</span><strong id="billExpense">0.00</strong></div>
+          <div class="bill-col"><span>结余</span><strong id="billBalance">0.00</strong></div>
+        </div>
+      </div>
+
+      <!-- 预算卡片 -->
+      <div class="discover-card">
+        <div class="card-head">
+          <span class="card-title" id="budgetTitle">09月总预算</span>
+          <button class="budget-set-btn" id="budgetSetBtn">+ 设置预算</button>
+        </div>
+        <div class="budget-body">
+          <div class="budget-ring">
+            <svg viewBox="0 0 120 120" class="ring-svg">
+              <circle cx="60" cy="60" r="50" fill="none" stroke="#E8E8E8" stroke-width="12"/>
+              <circle cx="60" cy="60" r="50" fill="none" stroke="#FFD93D" stroke-width="12"
+                stroke-dasharray="314" stroke-dashoffset="314" stroke-linecap="round"
+                transform="rotate(-90 60 60)" id="ringProgress"/>
+            </svg>
+            <div class="ring-text">
+              <span class="ring-label">剩余</span>
+              <span class="ring-percent" id="ringPercent">0%</span>
+            </div>
+          </div>
+          <div class="budget-info">
+            <div class="budget-line"><span>剩余预算：</span><strong id="budgetRemain">0.00</strong></div>
+            <div class="budget-line"><span>本月预算：</span><strong id="budgetTotal">0.00</strong></div>
+            <div class="budget-line"><span>本月支出：</span><strong id="budgetSpent">0.00</strong></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 资产管家卡片 -->
+      <div class="discover-card">
+        <div class="card-head">
+          <span class="card-title">资产管家</span>
+          <span class="arrow">›</span>
+        </div>
+        <div class="asset-row">
+          <div class="asset-col"><span>净资产</span><strong>0.00</strong></div>
+          <div class="asset-col"><span>资产</span><strong>0.00</strong></div>
+          <div class="asset-col"><span>负债</span><strong>0.00</strong></div>
+        </div>
+      </div>
+
     </div>
   </div>
 

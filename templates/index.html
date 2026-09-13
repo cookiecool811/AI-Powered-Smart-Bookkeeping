@@ -19,12 +19,13 @@
       </div>
     </header>
     <div class="ai-page-content">
-      <textarea id="input" class="ai-input" placeholder="告诉 AI 你的消费……" rows="4"></textarea>
+      <textarea id="input" class="ai-input" placeholder="告诉 AI 你的收支……（例如：午餐15元 / 工资5000元）" rows="4"></textarea>
       <button id="submit" class="ai-submit">智能记账</button>
       <div id="message" class="ai-message"></div>
       <div class="export-row">
         <select id="rangeSelect" class="export-select">
           <option value="all" selected>导出：全部</option>
+          <option value="week">导出：本周</option>
           <option value="month">导出：本月</option>
           <option value="year">导出：本年</option>
           <option value="custom">导出：自定义</option>

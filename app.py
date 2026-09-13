@@ -9,7 +9,7 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.mime.base import MIMEBase
 from email import encoders
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 from flask import Flask, jsonify, render_template, request, send_file
 from openpyxl import Workbook
@@ -205,6 +205,9 @@ def query_expenses(start_date=None, end_date=None, ids=None):
 
 def resolve_date_range(range_type, start=None, end=None):
     today = datetime.now().strftime("%Y-%m-%d")
+    if range_type == "week":
+        week_ago = (datetime.now() - timedelta(days=6)).strftime("%Y-%m-%d")
+        return week_ago, today
     if range_type == "month":
         return today[:7] + "-01", today
     if range_type == "year":
@@ -214,6 +217,10 @@ def resolve_date_range(range_type, start=None, end=None):
     return None, None
 
 def range_label(range_type, start_date=None, end_date=None):
+    if range_type == "week":
+        week_ago = (datetime.now() - timedelta(days=6)).strftime("%m月%d日")
+        today = datetime.now().strftime("%m月%d日")
+        return f"{week_ago}至{today}"
     if range_type == "month":
         return datetime.now().strftime("%Y年%m月")
     if range_type == "year":

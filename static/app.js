@@ -262,11 +262,26 @@ document.querySelectorAll(".period-tab").forEach(tab => {
   });
 });
 
-// 支出/收入切换
-document.querySelector("#typeToggle").addEventListener("click", function(){
-  currentView = currentView === "expense" ? "income" : "expense";
-  this.innerHTML = (currentView === "income" ? "收入" : "支出") + ' <span class="dropdown-arrow">▾</span>';
-  if(latestStats) renderCharts(latestStats, allExpenses);
+// 支出/收入下拉切换
+const typeToggle = document.querySelector("#typeToggle");
+const typeDropdown = document.querySelector("#typeDropdown");
+typeToggle.addEventListener("click", function(e){
+  e.stopPropagation();
+  typeDropdown.classList.toggle("show");
+});
+document.addEventListener("click", function(){
+  typeDropdown.classList.remove("show");
+});
+document.querySelectorAll(".type-option").forEach(opt => {
+  opt.addEventListener("click", function(e){
+    e.stopPropagation();
+    currentView = this.dataset.type;
+    document.querySelector("#typeLabel").textContent = currentView === "income" ? "收入" : "支出";
+    document.querySelector("#checkExpense").textContent = currentView === "expense" ? "✓" : "";
+    document.querySelector("#checkIncome").textContent = currentView === "income" ? "✓" : "";
+    typeDropdown.classList.remove("show");
+    if(latestStats) renderCharts(latestStats, allExpenses);
+  });
 });
 
 document.querySelector("#input").addEventListener("keydown", e => {

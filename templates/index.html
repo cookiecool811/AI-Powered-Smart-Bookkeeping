@@ -64,7 +64,17 @@
   <!-- ===== 图表页 ===== -->
   <div class="tab-page" id="page-chart">
     <header class="page-header">
-      <div class="chart-title-row" id="typeToggle">支出 <span class="dropdown-arrow">▾</span></div>
+      <div class="chart-title-row" id="typeToggle">
+        <span id="typeLabel">支出</span> <span class="dropdown-arrow">▾</span>
+        <div class="type-dropdown" id="typeDropdown">
+          <div class="type-option" data-type="expense">
+            <span class="type-icon">⬆️</span><span>支出</span><span class="type-check" id="checkExpense">✓</span>
+          </div>
+          <div class="type-option" data-type="income">
+            <span class="type-icon">⬇️</span><span>收入</span><span class="type-check" id="checkIncome"></span>
+          </div>
+        </div>
+      </div>
       <div class="period-tabs">
         <button class="period-tab active" data-period="week">周</button>
         <button class="period-tab" data-period="month">月</button>

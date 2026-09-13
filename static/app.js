@@ -2,11 +2,14 @@ let doughnutChart, lineChart;
 let lastAddedIds = [];
 let allExpenses = [];
 let currentPeriod = "week";
+let currentView = "expense";
+let latestStats = null;
 
 const CATEGORY_ICONS = {
   "餐饮":"🍔","交通":"🚗","购物":"🛍️","住房":"🏠","娱乐":"🎮",
   "医疗":"💊","教育":"📚","通讯":"📱","旅行":"✈️","生活缴费":"💡",
-  "数码电子":"💻","其他":"📌"
+  "数码电子":"💻","其他":"📌",
+  "工资":"💰","奖金":"🎁","投资收益":"📈","兼职":"💼","红包":"🧧","退款":"↩️","其他收入":"💵"
 };
 const CHART_COLORS = ["#FFD93D","#FF9F43","#EE5A6F","#54A0FF","#5F27CD","#00D2D3","#FF6B6B","#48DBFB","#FECA57","#1DD1A1","#C8D6E5","#8395A7"];
 
@@ -17,9 +20,10 @@ function escapeHtml(s){return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":
 function groupByDate(items){
   const g = {};
   items.forEach(it => {
-    if(!g[it.date]) g[it.date] = {items:[], total:0};
+    if(!g[it.date]) g[it.date] = {items:[], expense:0, income:0};
     g[it.date].items.push(it);
-    g[it.date].total += Number(it.amount);
+    if(it.type === "income") g[it.date].income += Number(it.amount);
+    else g[it.date].expense += Number(it.amount);
   });
   return Object.keys(g).sort().reverse().map(d => ({date:d, ...g[d]}));
 }
@@ -37,8 +41,10 @@ async function load(){
     fetch("/api/expenses").then(r=>r.json())
   ]);
   allExpenses = e.items;
+  latestStats = s;
 
-  document.querySelector("#monthExpense").textContent = money(s.month_total);
+  document.querySelector("#monthExpense").textContent = money(s.month_expense);
+  document.querySelector("#monthIncome").textContent = money(s.month_income);
   document.querySelector("#totalCountMe").textContent = s.count;
   document.querySelector("#recordDays").textContent = new Set(e.items.map(x=>x.date)).size;
 
@@ -53,26 +59,33 @@ function renderRecords(items){
     return;
   }
   const groups = groupByDate(items);
-  c.innerHTML = groups.map(g => `
+  c.innerHTML = groups.map(g => {
+    let totalText = "";
+    if(g.expense > 0) totalText += `支出 ${money(g.expense)}`;
+    if(g.income > 0) totalText += (totalText ? "  " : "") + `收入 ${money(g.income)}`;
+    return `
     <div class="date-group">
-      <div class="date-header"><span class="date-text">${formatDate(g.date)}</span><span class="date-total">支出 ${money(g.total)}</span></div>
-      ${g.items.map(it => `
+      <div class="date-header"><span class="date-text">${formatDate(g.date)}</span><span class="date-total">${totalText}</span></div>
+      ${g.items.map(it => {
+        const isIncome = it.type === "income";
+        return `
         <div class="record-item">
           <div class="record-icon">${getIcon(it.category)}</div>
           <div class="record-info">
             <div class="record-desc">${escapeHtml(it.description)}</div>
             <div class="record-cat">${it.category} · ${escapeHtml(it.payment_method)}</div>
           </div>
-          <div class="record-amount">-${Number(it.amount).toFixed(2)}</div>
+          <div class="record-amount ${isIncome ? 'income' : ''}">${isIncome ? '+' : '-'}${Number(it.amount).toFixed(2)}</div>
           <button class="record-delete" onclick="removeExpense(${it.id})">✕</button>
-        </div>`).join("")}
-    </div>`).join("");
+        </div>`;
+      }).join("")}
+    </div>`;
+  }).join("");
 }
 
 // ===== 图表 =====
 function renderCharts(stats, items){
-  // 分类排行
-  const cats = stats.category;
+  const cats = currentView === "income" ? (stats.income_category || []) : (stats.category || []);
   document.querySelector("#categoryRank").innerHTML = cats.length
     ? cats.slice(0,8).map((x,i) => `
       <div class="rank-item">
@@ -117,6 +130,9 @@ function renderLineChart(items){
     document.querySelector("#periodLabel").textContent = "本年";
   }
 
+  // 按收入/支出过滤
+  filtered = filtered.filter(x => currentView === "income" ? x.type === "income" : (x.type || "expense") === "expense");
+
   // 聚合
   const totals = {};
   filtered.forEach(x => {
@@ -133,10 +149,12 @@ function renderLineChart(items){
   document.querySelector("#periodTotal").textContent = money(sum);
   document.querySelector("#periodAvg").textContent = money(avg);
 
+  const lineColor = currentView === "income" ? "#27AE60" : "#F0C419";
+  const fillColor = currentView === "income" ? "rgba(39,174,96,.15)" : "rgba(255,217,61,.15)";
   if(lineChart) lineChart.destroy();
   lineChart = new Chart(document.querySelector("#lineChart"),{
     type:"line",
-    data:{labels,datasets:[{data,borderColor:"#F0C419",backgroundColor:"rgba(255,217,61,.15)",fill:true,tension:.3,pointRadius:4,pointBackgroundColor:"#fff",pointBorderColor:"#F0C419",pointBorderWidth:2}]},
+    data:{labels,datasets:[{data,borderColor:lineColor,backgroundColor:fillColor,fill:true,tension:.3,pointRadius:4,pointBackgroundColor:"#fff",pointBorderColor:lineColor,pointBorderWidth:2}]},
     options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,grid:{color:"#f0f0f0"},ticks:{font:{size:10}}},x:{grid:{display:false},ticks:{font:{size:10}}}}}
   });
 }
@@ -233,6 +251,13 @@ document.querySelectorAll(".period-tab").forEach(tab => {
     currentPeriod = this.dataset.period;
     renderLineChart(allExpenses);
   });
+});
+
+// 支出/收入切换
+document.querySelector("#typeToggle").addEventListener("click", function(){
+  currentView = currentView === "expense" ? "income" : "expense";
+  this.innerHTML = (currentView === "income" ? "收入" : "支出") + ' <span class="dropdown-arrow">▾</span>';
+  if(latestStats) renderCharts(latestStats, allExpenses);
 });
 
 document.querySelector("#input").addEventListener("keydown", e => {

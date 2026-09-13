@@ -101,6 +101,7 @@ body{
 .record-desc{font-size:15px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .record-cat{font-size:11px;color:var(--muted);margin-top:2px}
 .record-amount{font-size:17px;font-weight:700;flex-shrink:0}
+.record-amount.income{color:var(--green)}
 .record-delete{
   background:none;border:none;color:#CCC;font-size:16px;
   cursor:pointer;padding:4px 6px;flex-shrink:0;min-width:auto;
@@ -120,6 +121,8 @@ body{
   font-size:22px;
   font-weight:700;
   margin-bottom:16px;
+  cursor:pointer;
+  user-select:none;
 }
 .dropdown-arrow{font-size:16px;color:#555}
 .period-tabs{

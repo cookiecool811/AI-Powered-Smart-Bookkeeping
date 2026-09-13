@@ -32,20 +32,27 @@ CATEGORIES = [
     "餐饮", "交通", "购物", "住房", "娱乐", "医疗",
     "教育", "通讯", "旅行", "生活缴费", "数码电子", "其他"
 ]
+INCOME_CATEGORIES = [
+    "工资", "奖金", "投资收益", "兼职", "红包", "退款", "其他收入"
+]
 
 SYSTEM_PROMPT = f"""
 你是一个专业的中文AI记账助手。
-你的任务是把用户自然语言中的消费记录解析成结构化账单。
+你的任务是把用户自然语言中的收支记录解析成结构化账单。
 只返回合法JSON，不要Markdown，不要解释。
 
-分类必须从以下类别中选择：
+支出分类必须从以下类别中选择：
 {", ".join(CATEGORIES)}
+
+收入分类必须从以下类别中选择：
+{", ".join(INCOME_CATEGORIES)}
 
 JSON格式：
 {{
   "items": [
     {{
       "amount": 12.5,
+      "type": "expense",
       "category": "餐饮",
       "description": "午餐",
       "date": "YYYY-MM-DD",
@@ -58,12 +65,13 @@ JSON格式：
 
 规则：
 1. amount 必须是正数。
-2. 如果用户没有明确日期，使用今天。
-3. 一句话可能包含多笔消费，必须全部提取。
-4. 如果没有金额，不要猜测，items 返回空数组。
-5. 日期可以理解“今天、昨天、前天、上周”等表达。
-6. 分类要根据消费语义判断。
-7. confidence 为0到1之间的小数。
+2. type 为 "expense"（支出）或 "income"（收入），根据语义判断：工资、奖金、收入、收到、退款、红包等为收入；消费、买、花、付等为支出。
+3. 如果用户没有明确日期，使用今天。
+4. 一句话可能包含多笔记录，必须全部提取。
+5. 如果没有金额，不要猜测，items 返回空数组。
+6. 日期可以理解"今天、昨天、前天、上周"等表达。
+7. 分类要根据语义判断，收入用收入分类，支出用支出分类。
+8. confidence 为0到1之间的小数。
 """
 
 def db():
@@ -87,6 +95,12 @@ def init_db():
     )
     """)
     conn.commit()
+    # Add type column if not exists (for existing databases)
+    cur.execute("PRAGMA table_info(expenses)")
+    cols = [row[1] for row in cur.fetchall()]
+    if "type" not in cols:
+        cur.execute("ALTER TABLE expenses ADD COLUMN type TEXT DEFAULT 'expense'")
+        conn.commit()
     cur.close()
     conn.close()
 
@@ -131,22 +145,27 @@ def save_items(items):
         amount = float(item["amount"])
         if amount <= 0:
             continue
+        item_type = item.get("type", "expense")
+        if item_type not in ("expense", "income"):
+            item_type = "expense"
         category = item.get("category", "其他")
-        if category not in CATEGORIES:
-            category = "其他"
+        valid_cats = INCOME_CATEGORIES if item_type == "income" else CATEGORIES
+        if category not in valid_cats:
+            category = "其他收入" if item_type == "income" else "其他"
         description = str(item.get("description", "未命名消费"))
         date = str(item.get("date") or datetime.now().strftime("%Y-%m-%d"))
         payment = str(item.get("payment_method", "未知"))
         confidence = max(0, min(1, float(item.get("confidence", 0))))
         cur.execute("""
             INSERT INTO expenses
-            (amount, category, description, expense_date, payment_method, confidence, created_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
-        """, (amount, category, description, date, payment, confidence, now))
+            (amount, type, category, description, expense_date, payment_method, confidence, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        """, (amount, item_type, category, description, date, payment, confidence, now))
         new_id = cur.lastrowid
         saved.append({
             "id": new_id,
             "amount": amount,
+            "type": item_type,
             "category": category,
             "description": description,
             "date": date,
@@ -162,7 +181,7 @@ def query_expenses(start_date=None, end_date=None, ids=None):
     conn = db()
     cur = conn.cursor()
     sql = """
-        SELECT id, amount, category, description,
+        SELECT id, amount, type, category, description,
                expense_date AS date, payment_method, confidence
         FROM expenses WHERE 1=1
     """
@@ -301,21 +320,32 @@ def api_expenses():
 @app.get("/api/stats")
 def api_stats():
     rows = query_expenses()
-    total = sum(r["amount"] for r in rows)
+    expenses = [r for r in rows if r.get("type", "expense") == "expense"]
+    incomes = [r for r in rows if r.get("type") == "income"]
     month = datetime.now().strftime("%Y-%m")
     year = datetime.now().strftime("%Y")
-    month_total = sum(r["amount"] for r in rows if r["date"].startswith(month))
-    year_total = sum(r["amount"] for r in rows if r["date"].startswith(year))
-    category = {}
-    for r in rows:
-        category[r["category"]] = category.get(r["category"], 0) + r["amount"]
-    top = sorted(category.items(), key=lambda x: x[1], reverse=True)[:8]
+    month_expense = sum(r["amount"] for r in expenses if r["date"].startswith(month))
+    month_income = sum(r["amount"] for r in incomes if r["date"].startswith(month))
+    year_expense = sum(r["amount"] for r in expenses if r["date"].startswith(year))
+    year_income = sum(r["amount"] for r in incomes if r["date"].startswith(year))
+    exp_cat = {}
+    for r in expenses:
+        exp_cat[r["category"]] = exp_cat.get(r["category"], 0) + r["amount"]
+    exp_top = sorted(exp_cat.items(), key=lambda x: x[1], reverse=True)[:8]
+    inc_cat = {}
+    for r in incomes:
+        inc_cat[r["category"]] = inc_cat.get(r["category"], 0) + r["amount"]
+    inc_top = sorted(inc_cat.items(), key=lambda x: x[1], reverse=True)[:8]
     return jsonify({
-        "total": round(total, 2),
-        "month_total": round(month_total, 2),
-        "year_total": round(year_total, 2),
+        "total_expense": round(sum(r["amount"] for r in expenses), 2),
+        "total_income": round(sum(r["amount"] for r in incomes), 2),
+        "month_expense": round(month_expense, 2),
+        "month_income": round(month_income, 2),
+        "year_expense": round(year_expense, 2),
+        "year_income": round(year_income, 2),
         "count": len(rows),
-        "category": [{"name": k, "value": round(v, 2)} for k, v in top]
+        "category": [{"name": k, "value": round(v, 2)} for k, v in exp_top],
+        "income_category": [{"name": k, "value": round(v, 2)} for k, v in inc_top]
     })
 
 @app.get("/api/summary")

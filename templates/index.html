@@ -48,7 +48,7 @@
       <div class="header-bottom">
         <div class="month-select" id="monthLabel">2026年 09月 ▾</div>
         <div class="ie-group">
-          <div class="ie-col"><span>收入</span><strong>0.00</strong></div>
+          <div class="ie-col"><span>收入</span><strong id="monthIncome">0.00</strong></div>
           <div class="ie-col"><span>支出</span><strong id="monthExpense">¥0.00</strong></div>
         </div>
       </div>
@@ -62,7 +62,7 @@
   <!-- ===== 图表页 ===== -->
   <div class="tab-page" id="page-chart">
     <header class="page-header">
-      <div class="chart-title-row">支出 <span class="dropdown-arrow">▾</span></div>
+      <div class="chart-title-row" id="typeToggle">支出 <span class="dropdown-arrow">▾</span></div>
       <div class="period-tabs">
         <button class="period-tab active" data-period="week">周</button>
         <button class="period-tab" data-period="month">月</button>
